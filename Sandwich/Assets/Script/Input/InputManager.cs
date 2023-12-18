@@ -39,7 +39,7 @@ public class InputManager : MonoBehaviour
 
     void ResetInput()
     {
-        if(currentRoteable) ResetRotation();
+        if (currentRoteable) ResetRotation();
 
         isSwiping = false;
     }
@@ -53,7 +53,7 @@ public class InputManager : MonoBehaviour
         Debug.DrawRay(ray.origin, ray.direction * 100, Color.blue, 10);
 
         return Physics.Raycast(ray, out RaycastHit raycastHit, Camera.main.farClipPlane, hitMask)
-           && (hit = raycastHit.collider.GetComponent<Roteable>());
+           && (hit = raycastHit.collider.GetComponent<Roteable>()) && !hit.Repositionating;
     }
 
     void StartRotation(Vector2 startPos, Roteable hit)
