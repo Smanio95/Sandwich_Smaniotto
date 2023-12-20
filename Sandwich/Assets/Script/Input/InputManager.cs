@@ -8,7 +8,6 @@ public class InputManager : MonoBehaviour
 
     Inputs inputs;
 
-    private bool isSwiping = false;
     private Roteable currentRoteable = null;
 
     private void Awake()
@@ -33,15 +32,11 @@ public class InputManager : MonoBehaviour
         if (!HasHit(mousePos, out Roteable hit)) return;
 
         StartRotation(mousePos, hit);
-
-        isSwiping = true;
     }
 
     void ResetInput()
     {
         if (currentRoteable) ResetRotation();
-
-        isSwiping = false;
     }
 
     bool HasHit(Vector2 mousePos, out Roteable hit)
