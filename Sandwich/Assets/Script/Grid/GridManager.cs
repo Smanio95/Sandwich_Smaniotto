@@ -6,16 +6,11 @@ using UnityEngine.UI;
 
 public class GridManager : MonoBehaviour
 {
-    [SerializeField] Roteable roteablePrefab;
-    [SerializeField] Roteable breadPrefab;
-    [SerializeField] float offset = 1f;
-    [SerializeField] int difficultyMultiplicator = 2;
-    [SerializeField] List<Transform> ingredientMeshes;
+    [SerializeField] GridInfo info;
+    [Header("Refs")]
     [SerializeField] Slider difficultySlider;
     [SerializeField] GameObject endPanel;
     [SerializeField] TMP_Text endTxt;
-    [SerializeField] string winText = "YOU WON";
-    [SerializeField] string loseText = "YOU LOST";
 
     private readonly bool[,] cells = new bool[Constants.GRID_SIZE, Constants.GRID_SIZE];
     private readonly List<(int r, int c)> insertedLst = new();
@@ -60,7 +55,7 @@ public class GridManager : MonoBehaviour
     {
         InstantiateBreads();
 
-        int nToSpawn = (int)difficultySlider.value * difficultyMultiplicator;
+        int nToSpawn = (int)difficultySlider.value * info.DifficultyMultiplicator;
 
         InstantiateIngredients(nToSpawn);
     }
@@ -73,7 +68,7 @@ public class GridManager : MonoBehaviour
 
         win = win && CheckOthers(caller);
 
-        endTxt.text = win ? winText : loseText;
+        endTxt.text = win ? info.WinText : info.LoseText;
 
         endPanel.SetActive(true);
     }
@@ -104,8 +99,8 @@ public class GridManager : MonoBehaviour
         cells[firstPos.r, firstPos.c] = true;
         insertedLst.Add(firstPos);
 
-        Roteable bread = Instantiate(breadPrefab, new(firstPos.r * offset, 0, firstPos.c * offset), Quaternion.identity, transform);
-        bread.Setup(offset);
+        Roteable bread = Instantiate(info.BreadPrefab, new(firstPos.r * info.Offset, 0, firstPos.c * info.Offset), Quaternion.identity, transform);
+        bread.Setup(info.Offset);
         roteableLst.Add(bread);
 
         (int r, int c) secondPos = GetRandom(FindAdiacent(firstPos.r, firstPos.c));
@@ -113,8 +108,8 @@ public class GridManager : MonoBehaviour
         cells[secondPos.r, secondPos.c] = true;
         insertedLst.Add(secondPos);
 
-        bread = Instantiate(breadPrefab, new(secondPos.r * offset, 0, secondPos.c * offset), Quaternion.identity, transform);
-        bread.Setup(offset);
+        bread = Instantiate(info.BreadPrefab, new(secondPos.r * info.Offset, 0, secondPos.c * info.Offset), Quaternion.identity, transform);
+        bread.Setup(info.Offset);
         roteableLst.Add(bread);
 
     }
@@ -144,15 +139,15 @@ public class GridManager : MonoBehaviour
 
     void InstantiateIngredient(int r, int c)
     {
-        if (ingredientMeshes.Count == 0) return;
+        if (info.IngredientMeshes.Count == 0) return;
 
-        Roteable parent = Instantiate(roteablePrefab, new(r * offset, 0, c * offset), Quaternion.identity, transform);
+        Roteable parent = Instantiate(info.RoteablePrefab, new(r * info.Offset, 0, c * info.Offset), Quaternion.identity, transform);
 
-        Transform randomIngredient = ingredientMeshes[Random.Range(0, ingredientMeshes.Count)];
+        Transform randomIngredient = info.IngredientMeshes[Random.Range(0, info.IngredientMeshes.Count)];
 
         Transform mesh = Instantiate(randomIngredient);
 
-        parent.Setup(offset, mesh);
+        parent.Setup(info.Offset, mesh);
 
         roteableLst.Add(parent);
     }

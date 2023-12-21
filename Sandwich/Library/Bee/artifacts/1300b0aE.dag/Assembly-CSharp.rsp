@@ -350,9 +350,12 @@
 -r:"Library/Bee/artifacts/1300b0aE.dag/UnityEditor.UI.ref.dll"
 -r:"Library/Bee/artifacts/1300b0aE.dag/UnityEngine.UI.ref.dll"
 "Assets/Input/Inputs.cs"
+"Assets/Script/Grid/GridInfo.cs"
 "Assets/Script/Grid/GridManager.cs"
 "Assets/Script/Input/InputManager.cs"
 "Assets/Script/Roteables/Roteable.cs"
+"Assets/Script/Roteables/RoteableInfo.cs"
+"Assets/Script/SceneController.cs"
 "Assets/Script/Utils/Utils.cs"
 -langversion:9.0
 

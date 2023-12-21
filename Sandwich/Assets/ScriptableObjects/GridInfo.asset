@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d121117118bfa7b449514487d6dc72dd, type: 3}
+  m_Name: GridInfo
+  m_EditorClassIdentifier: 
+  roteablePrefab: {fileID: 4294927993179272343, guid: 565fc42ef3c6fc3499dbb0ca720a5006, type: 3}
+  breadPrefab: {fileID: 4294927993179272343, guid: 8a66d5ae26d89c048880354859853787, type: 3}
+  offset: 1
+  difficultyMultiplicator: 2
+  ingredientMeshes:
+  - {fileID: 6006985359618377752, guid: d2d88cfc0117d9f49bc5435ab1f4a75e, type: 3}
+  - {fileID: 3490686041470116538, guid: 1c83457770246c94a91fbdf4eaab263b, type: 3}
+  - {fileID: 3490686041470116538, guid: 335b6ed19938a1845add52daf232939d, type: 3}
+  - {fileID: 6006985359618377752, guid: abe9beac54cba1341821b525fd00ff37, type: 3}
+  - {fileID: 3490686041470116538, guid: 1a73cf4c955985742a8cdf3339307359, type: 3}
+  winText: YOU WON
+  loseText: YOU LOST

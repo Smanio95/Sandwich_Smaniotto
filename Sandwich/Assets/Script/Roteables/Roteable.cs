@@ -42,11 +42,12 @@ public class Roteable : MonoBehaviour
     [SerializeField] IngredientType type;
 
     [Header("Functionality")]
-    [SerializeField] LayerMask detectionMask;
-    [SerializeField] float minSqrDistance = 700;
-    [SerializeField] float rotationSpeed = 30;
-    [SerializeField] float repositionateAngle = 60;
-    [SerializeField] int breadWinCounter = 2;
+    //[SerializeField] LayerMask detectionMask;
+    //[SerializeField] float minSqrDistance = 700;
+    //[SerializeField] float rotationSpeed = 30;
+    //[SerializeField] float repositionateAngle = 60;
+    //[SerializeField] int breadWinCounter = 2;
+    [SerializeField] RoteableInfo info;
 
     [Header("Refs")]
     [SerializeField] BoxCollider boxCollider;
@@ -61,13 +62,11 @@ public class Roteable : MonoBehaviour
         {
             float height = 0;
 
-            foreach (MeshInfo info in children) height += info.mesh.localScale.y;
+            foreach (MeshInfo meshInfo in children) height += info.SingleMeshHeight;
 
             return height;
         }
     }
-
-    public float SingleHeight { get => children[0].mesh.localScale.y; }
 
     private float sideDistance;
     private float diagDistance;
@@ -139,7 +138,7 @@ public class Roteable : MonoBehaviour
 
     private void CheckWin()
     {
-        if (winCounter < breadWinCounter) return;
+        if (winCounter < info.BreadWinCounter) return;
 
         MeshInfo highest = new();
         MeshInfo lowest = new();
@@ -164,7 +163,7 @@ public class Roteable : MonoBehaviour
 
     void ManageRotation(Vector2 posValue)
     {
-        if (winCounter >= breadWinCounter || repositionating) return;
+        if (winCounter >= info.BreadWinCounter || repositionating) return;
 
         if (hasDirection)
         {
@@ -175,7 +174,7 @@ public class Roteable : MonoBehaviour
             return;
         }
 
-        if (Vector3.SqrMagnitude(startPos - posValue) < minSqrDistance) return;
+        if (Vector3.SqrMagnitude(startPos - posValue) < info.MinSqrDistance) return;
 
         hasDirection = true;
 
@@ -188,9 +187,9 @@ public class Roteable : MonoBehaviour
         // we adjust the height of the rotationAxis: the middle point is found through my height and the height of the object 
         // that we will inglobe. We must then watch the global position of the whole meshes, that we know they starts
         // at height 0 and subtract half of a single mesh for both myself and the object to inglobe in 
-        // order to consider the position of the pivot of the single meshes (positioned in the middle of a single mesh).
+        // order to consider the position of the pivot of the single meshes (positioned in the middle of a single mesh that is built to have 0.2f of height).
         // We then substract by 2 to retrieve the center of rotation.
-        if (nextChild) initialPos.y = (Height + nextChild.Height - SingleHeight / 2 - nextChild.SingleHeight / 2) / 2;
+        if (nextChild) initialPos.y = (Height + nextChild.Height - info.SingleMeshHeight) / 2;
 
         lastPos = posValue;
     }
@@ -199,19 +198,19 @@ public class Roteable : MonoBehaviour
     {
         float delta = Vector3.Dot(direction, (posValue - lastPos).normalized) > 0 ? -1 : 1;
 
-        float partialRot = rotatedAngle - delta * rotationSpeed * Time.fixedDeltaTime;
+        float partialRot = rotatedAngle - delta * info.RotationSpeed * Time.fixedDeltaTime;
 
-        if (partialRot < repositionateAngle && partialRot > 0)
+        if (partialRot < info.RepositionateAngle && partialRot > 0)
         {
             askCompletion = false;
 
-            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * rotationSpeed * Time.fixedDeltaTime);
+            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.fixedDeltaTime);
 
             lastPos = posValue;
 
             rotatedAngle = partialRot;
         }
-        else if (partialRot >= repositionateAngle)
+        else if (partialRot >= info.RepositionateAngle)
         {
             askCompletion = true;
         }
@@ -231,25 +230,16 @@ public class Roteable : MonoBehaviour
 
             yield return null;
 
-            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * rotationSpeed * Time.deltaTime);
+            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.deltaTime);
 
             Debug.DrawRay(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up) * 100, Color.red, 10);
 
-            rotatedAngle -= delta * rotationSpeed * Time.deltaTime;
+            rotatedAngle -= delta * info.RotationSpeed * Time.deltaTime;
         }
 
-        Vector3 eulers = transform.rotation.eulerAngles;
-        transform.rotation = Quaternion.Euler(
-            Utils.RoundToRectValue(eulers.x),
-            Utils.RoundToRectValue(eulers.y),
-            Utils.RoundToRectValue(eulers.z));
+        transform.rotation = transform.rotation.RoundToRectValue();
 
-        Vector3 currentPos = transform.position;
-        transform.position = new(
-            (float)Math.Round(currentPos.x, 1),
-            (float)Math.Round(currentPos.y, 1),
-            (float)Math.Round(currentPos.z, 1)
-            );
+        transform.position = transform.position.Round(1);
 
         repositionating = false;
 
@@ -296,7 +286,7 @@ public class Roteable : MonoBehaviour
 
         Debug.DrawLine(origin, origin + direction * 5, Color.magenta, 5);
 
-        if (Physics.Raycast(origin, direction, out RaycastHit hit, sideDistance * 2, detectionMask))
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, sideDistance * 2, info.DetectionMask))
         {
             return hit.collider.GetComponent<Roteable>();
         }
@@ -355,7 +345,7 @@ public class Roteable : MonoBehaviour
 
         transform.position = new(
             transform.position.x,
-            Height - SingleHeight,
+            Height - info.SingleMeshHeight,
             transform.position.z);
 
         UpdatePositions(positionsCopy);

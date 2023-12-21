@@ -143,13 +143,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 1
-  detectionMask:
-    serializedVersion: 2
-    m_Bits: 64
-  minSqrDistance: 700
-  rotationSpeed: 400
-  repositionateAngle: 20
-  breadWinCounter: 2
+  info: {fileID: 11400000, guid: 9f687a4b2aa3a6149a8ea7b88909ce62, type: 2}
   boxCollider: {fileID: 4294927993179272342}
   children:
   - type: 1
