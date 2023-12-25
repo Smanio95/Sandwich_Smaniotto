@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -15,6 +16,9 @@ public class GridManager : MonoBehaviour
     private readonly bool[,] cells = new bool[Constants.GRID_SIZE, Constants.GRID_SIZE];
     private readonly List<(int r, int c)> insertedLst = new();
     private readonly List<Roteable> roteableLst = new();
+
+    public delegate void Placed();
+    public static Placed OnPlaced;
 
     public delegate void EndGame(Roteable caller, bool win);
     public static EndGame OnEndGame;
@@ -58,9 +62,19 @@ public class GridManager : MonoBehaviour
         int nToSpawn = (int)difficultySlider.value * info.DifficultyMultiplicator;
 
         InstantiateIngredients(nToSpawn);
+
+        StartCoroutine(PlaceElements());
     }
 
-    void CheckWin(Roteable caller, bool win) => StartCoroutine(CheckWinDelayed(caller, win));
+    void CheckWin(Roteable caller, bool win)
+    {
+        //StartCoroutine(CheckWinDelayed(caller, win));
+        win = win && CheckOthers(caller);
+
+        endTxt.text = win ? info.WinText : info.LoseText;
+
+        endPanel.SetActive(true);
+    }
 
     IEnumerator CheckWinDelayed(Roteable caller, bool win)
     {
@@ -75,43 +89,28 @@ public class GridManager : MonoBehaviour
 
     bool CheckOthers(Roteable caller)
     {
-        foreach (Roteable r in roteableLst)
-        {
-            Debug.Log(r);
-        }
-
-        Debug.Log("---");
-
-        List<Roteable> supp = roteableLst.FindAll(roteable => !ReferenceEquals(roteable, caller) && roteable != null);
-
-        foreach (Roteable r in supp)
-        {
-            Debug.Log(r);
-        }
-
-        return roteableLst.FindAll(roteable => !roteable.Equals(caller) && roteable != null).Count == 0;
+        return roteableLst.FindAll(roteable => !roteable.Equals(caller) && roteable.gameObject.activeSelf).Count == 0;
     }
 
     void InstantiateBreads()
     {
         (int r, int c) firstPos = (Random.Range(0, Constants.GRID_SIZE), Random.Range(0, Constants.GRID_SIZE));
 
-        cells[firstPos.r, firstPos.c] = true;
-        insertedLst.Add(firstPos);
-
-        Roteable bread = Instantiate(info.BreadPrefab, new(firstPos.r * info.Offset, 0, firstPos.c * info.Offset), Quaternion.identity, transform);
-        bread.Setup(info.Offset);
-        roteableLst.Add(bread);
+        InstantiateBread(firstPos);
 
         (int r, int c) secondPos = GetRandom(FindAdiacent(firstPos.r, firstPos.c));
 
-        cells[secondPos.r, secondPos.c] = true;
-        insertedLst.Add(secondPos);
+        InstantiateBread(secondPos);
+    }
 
-        bread = Instantiate(info.BreadPrefab, new(secondPos.r * info.Offset, 0, secondPos.c * info.Offset), Quaternion.identity, transform);
+    void InstantiateBread((int r, int c) pos)
+    {
+        cells[pos.r, pos.c] = true;
+        insertedLst.Add(pos);
+
+        Bread bread = Instantiate(info.BreadPrefab, new(pos.r * info.Offset, info.StartHeight, pos.c * info.Offset), Quaternion.identity, transform);
         bread.Setup(info.Offset);
         roteableLst.Add(bread);
-
     }
 
     void InstantiateIngredients(int n)
@@ -141,7 +140,7 @@ public class GridManager : MonoBehaviour
     {
         if (info.IngredientMeshes.Count == 0) return;
 
-        Roteable parent = Instantiate(info.RoteablePrefab, new(r * info.Offset, 0, c * info.Offset), Quaternion.identity, transform);
+        Roteable parent = Instantiate(info.RoteablePrefab, new(r * info.Offset, info.StartHeight, c * info.Offset), Quaternion.identity, transform);
 
         Transform randomIngredient = info.IngredientMeshes[Random.Range(0, info.IngredientMeshes.Count)];
 
@@ -173,6 +172,22 @@ public class GridManager : MonoBehaviour
     (int r, int c) GetRandom(List<(int r, int c)> lst)
     {
         return lst[Random.Range(0, lst.Count)];
+    }
+
+    IEnumerator PlaceElements()
+    {
+        for(int i = 0; i < roteableLst.Count; i++)
+        {
+            Sequence seq = DOTween.Sequence();
+            seq.Append(roteableLst[i].transform.DOMoveY(0, info.PlacingDuration).SetEase(info.PlacingEase));
+            
+            if(i == roteableLst.Count - 1)
+            {
+                seq.AppendCallback(() => OnPlaced?.Invoke());
+            }
+
+            yield return new WaitForSeconds(info.PlacingDelay);
+        }
     }
 
     private void OnDisable()

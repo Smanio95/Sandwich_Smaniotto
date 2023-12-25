@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public enum IngredientType
 {
@@ -39,14 +40,9 @@ public struct MeshInfo
 public class Roteable : MonoBehaviour
 {
     [Header("Ingredient Type")]
-    [SerializeField] IngredientType type;
+    [SerializeField] protected IngredientType type;
 
     [Header("Functionality")]
-    //[SerializeField] LayerMask detectionMask;
-    //[SerializeField] float minSqrDistance = 700;
-    //[SerializeField] float rotationSpeed = 30;
-    //[SerializeField] float repositionateAngle = 60;
-    //[SerializeField] int breadWinCounter = 2;
     [SerializeField] RoteableInfo info;
 
     [Header("Refs")]
@@ -55,24 +51,12 @@ public class Roteable : MonoBehaviour
 
     public bool Repositionating { get => repositionating; }
     bool repositionating = false;
-
-    public float Height
-    {
-        get
-        {
-            float height = 0;
-
-            foreach (MeshInfo meshInfo in children) height += info.SingleMeshHeight;
-
-            return height;
-        }
-    }
+    public float Height { get => info.SingleMeshHeight * children.Count; }
 
     private float sideDistance;
     private float diagDistance;
     private readonly List<Vector3> axisPoints = new();
 
-    private Inputs inputs;
     private Vector3 initialPos;
 
     private Vector2 startPos;
@@ -81,17 +65,20 @@ public class Roteable : MonoBehaviour
     private Vector3 rotationAxis;
     private float rotatedAngle = 0;
 
+    protected int winCounter = 0;
     private bool hasDirection = false;
     private bool askCompletion = false;
-    private int winCounter = 0;
 
     private Roteable nextChild = null;
 
-    private void Awake()
-    {
-        if (!boxCollider) boxCollider = GetComponent<BoxCollider>();
+    public delegate void Repositionate(bool start);
+    public static Repositionate OnRepositionate;
 
-        if (type == IngredientType.Bread) winCounter++;
+    protected virtual void Awake()
+    {
+        enabled = false;
+
+        if (!boxCollider) boxCollider = GetComponent<BoxCollider>();
 
         GenerateAxisPoints();
     }
@@ -104,22 +91,24 @@ public class Roteable : MonoBehaviour
         }
     }
 
-    public void Setup(float offset, Transform firstChild = null)
+    public void Setup(float offset, Transform firstChild)
     {
-        if (firstChild)
-        {
-            firstChild.parent = transform;
+        firstChild.parent = transform;
 
-            firstChild.localPosition = Vector3.zero;
+        firstChild.localPosition = Vector3.zero;
 
-            children.Add(new(type, firstChild));
-        }
+        children.Add(new(type, firstChild));
 
+        InitializeDistances(offset);
+    }
+
+    protected void InitializeDistances(float offset)
+    {
         sideDistance = offset / 2;
         diagDistance = Mathf.Sqrt((sideDistance * sideDistance) + (sideDistance * sideDistance));
     }
 
-    public void EnableSelf(Vector2 _startPos, Inputs _input)
+    public void EnableSelf(Vector2 _startPos)
     {
         enabled = true;
 
@@ -128,8 +117,6 @@ public class Roteable : MonoBehaviour
         initialPos = transform.position;
 
         rotatedAngle = 0;
-
-        if (inputs == null) inputs = _input;
 
         hasDirection = false;
 
@@ -159,9 +146,7 @@ public class Roteable : MonoBehaviour
         GridManager.OnEndGame?.Invoke(this, lowest.type == highest.type && highest.type == IngredientType.Bread);
     }
 
-    private void FixedUpdate() => ManageRotation(inputs.BaseInputs.Position.ReadValue<Vector2>());
-
-    void ManageRotation(Vector2 posValue)
+    public void ManageRotation(Vector2 posValue)
     {
         if (winCounter >= info.BreadWinCounter || repositionating) return;
 
@@ -219,6 +204,7 @@ public class Roteable : MonoBehaviour
     IEnumerator CompleteRotation(bool toMin, Action finalAction)
     {
         repositionating = true;
+        OnRepositionate?.Invoke(repositionating);
 
         float lastAngle = 0;
 
@@ -232,16 +218,17 @@ public class Roteable : MonoBehaviour
 
             transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.deltaTime);
 
-            Debug.DrawRay(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up) * 100, Color.red, 10);
-
             rotatedAngle -= delta * info.RotationSpeed * Time.deltaTime;
+
+            Debug.DrawRay(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up) * 100, Color.red, 10);
         }
 
-        transform.rotation = transform.rotation.RoundToRectValue();
-
-        transform.position = transform.position.Round(1);
+        transform.SetPositionAndRotation(
+            transform.position.Round(1),
+            transform.rotation.RoundToRectValue());
 
         repositionating = false;
+        OnRepositionate?.Invoke(repositionating);
 
         finalAction?.Invoke();
     }
@@ -280,7 +267,7 @@ public class Roteable : MonoBehaviour
 
     Roteable RetrieveNextChild(Vector3 direction)
     {
-        float modifiedHeight = (Height / children.Count) / 2; // the lowest mesh center to raycast 
+        float modifiedHeight = ((Height - (info.SingleMeshHeight / 2)) / children.Count) / 2; // the lowest mesh center to raycast 
 
         Vector3 origin = new(initialPos.x, modifiedHeight, initialPos.z);
 
@@ -294,27 +281,44 @@ public class Roteable : MonoBehaviour
         return null;
     }
 
-    public void DisableSelf()
+    public void DisableSelf(out RoteableCommandInfo commandInfo)
     {
+        commandInfo = null;
+
         if (nextChild == null || !askCompletion)
         {
             StartCoroutine(CompleteRotation(true, () => enabled = false));
         }
         else
         {
-            StartCoroutine(CompleteRotation(false, Inglobe));
-        }
+            commandInfo = ValorizeCommandInfo();
 
+            (float collCenter, float collSize) = Inglobe(commandInfo);
+
+            StartCoroutine(CompleteRotation(false, () => EndInglobation(collCenter, collSize)));
+        }
     }
 
-    public void Inglobe()
+    RoteableCommandInfo ValorizeCommandInfo()
+    {
+        RoteableCommandInfo commandInfo = new();
+
+        commandInfo.inglobedRoteable = nextChild;
+        commandInfo.oldBCCenter = boxCollider.center;
+        commandInfo.oldBCSize = boxCollider.size;
+        commandInfo.oldRotationAxis = rotationAxis;
+
+        return commandInfo;
+    }
+
+    public (float collCenter, float collSize) Inglobe(RoteableCommandInfo commandInfo)
     {
         float collSize = boxCollider.size.y,
               collCenter = Mathf.Abs(boxCollider.center.y);
 
         foreach (MeshInfo child in nextChild.children)
         {
-            child.mesh.parent = transform;
+            commandInfo.inglobedChildren.Add(children.Count);
 
             collSize += (float)Math.Round(child.mesh.localScale.y, 1);
             collCenter += (float)Math.Round(child.mesh.localScale.y / 2, 1);
@@ -324,46 +328,100 @@ public class Roteable : MonoBehaviour
             if (child.type == IngredientType.Bread) winCounter++;
         }
 
+        return (collCenter, collSize);
+    }
+
+    public void EndInglobation(float collCenter, float collSize)
+    {
+        foreach (MeshInfo child in nextChild.children)
+        {
+            child.mesh.parent = transform;
+        }
+
         boxCollider.center = Vector3.Dot(Vector3.up, transform.up) < 0
-            ? collCenter * Vector3.up
-            : -collCenter * Vector3.up;
+        ? collCenter * Vector3.up
+        : -collCenter * Vector3.up;
 
         boxCollider.size = new(boxCollider.size.x, collSize, boxCollider.size.z);
 
         ResetPositions();
 
-        Destroy(nextChild.gameObject);
+        nextChild.gameObject.SetActive(false);
 
         CheckWin();
 
         enabled = false;
     }
 
+    public void Undo(RoteableCommandInfo commandInfo)
+    {
+        rotatedAngle = 0;
+
+        initialPos = new(transform.position.x,
+                        (Height - info.SingleMeshHeight / 2) / 2,
+                        transform.position.z);
+
+        rotationAxis = -commandInfo.oldRotationAxis;
+
+        Excorporate(commandInfo);
+
+        StartCoroutine(CompleteRotation(false, ResetPositions));
+    }
+
+    void Excorporate(RoteableCommandInfo info)
+    {
+        List<MeshInfo> newChildren = new();
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            if (!info.inglobedChildren.Contains(i))
+            {
+                newChildren.Add(children[i]);
+            }
+            else if (children[i].type == IngredientType.Bread)
+            {
+                winCounter--;
+            }
+        }
+
+        children = newChildren;
+
+        boxCollider.center = info.oldBCCenter;
+        boxCollider.size = info.oldBCSize;
+
+        info.inglobedRoteable.Resurrect();
+    }
+
+    void Resurrect()
+    {
+        foreach (MeshInfo info in children)
+        {
+            info.mesh.parent = transform;
+        }
+
+        gameObject.SetActive(true);
+    }
+
     void ResetPositions()
     {
-        List<Vector3> positionsCopy = CopyPositions(children);
-
         transform.position = new(
             transform.position.x,
             Height - info.SingleMeshHeight,
             transform.position.z);
 
-        UpdatePositions(positionsCopy);
+        UpdatePositions();
     }
 
-    List<Vector3> CopyPositions(List<MeshInfo> infos)
+    void UpdatePositions()
     {
-        List<Vector3> copyLst = new();
-        foreach (MeshInfo i in infos) copyLst.Add(i.mesh.position);
-        return copyLst;
-    }
+        List<MeshInfo> copyLst = children.OrderBy(a => a.mesh.position.y).ToList();
 
-    void UpdatePositions(List<Vector3> positionsCopy)
-    {
-        for (int i = 0; i < positionsCopy.Count; i++)
+        for (int i = 0; i < copyLst.Count; i++)
         {
-            children[i].mesh.position = positionsCopy[i];
+            copyLst[i].mesh.position = new(
+                copyLst[i].mesh.position.x,
+                info.SingleMeshHeight * i,
+                copyLst[i].mesh.position.z);
         }
     }
-
 }

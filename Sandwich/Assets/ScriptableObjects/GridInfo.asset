@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GridInfo
   m_EditorClassIdentifier: 
   roteablePrefab: {fileID: 4294927993179272343, guid: 565fc42ef3c6fc3499dbb0ca720a5006, type: 3}
-  breadPrefab: {fileID: 4294927993179272343, guid: 8a66d5ae26d89c048880354859853787, type: 3}
+  breadPrefab: {fileID: 8503672727959316818, guid: 8a66d5ae26d89c048880354859853787, type: 3}
   offset: 1
   difficultyMultiplicator: 2
   ingredientMeshes:
@@ -24,3 +24,7 @@ MonoBehaviour:
   - {fileID: 3490686041470116538, guid: 1a73cf4c955985742a8cdf3339307359, type: 3}
   winText: YOU WON
   loseText: YOU LOST
+  startHeight: 8
+  placingDuration: 0.4
+  placingDelay: 0.3
+  placingEase: 3

@@ -93,7 +93,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4294927993179272345}
   - component: {fileID: 4294927993179272342}
-  - component: {fileID: 4294927993179272343}
+  - component: {fileID: 8503672727959316818}
   m_Layer: 6
   m_Name: Bread
   m_TagString: Untagged
@@ -130,7 +130,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.8, y: 0.2, z: 0.8}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4294927993179272343
+--- !u!114 &8503672727959316818
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -139,7 +139,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 4294927993179272340}
   m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4dd8e2c44d8e01644aadf1c6a5890ebb, type: 3}
+  m_Script: {fileID: 11500000, guid: ac5272bc88895eb4780998e832dbe2b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   type: 1
