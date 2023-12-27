@@ -24,7 +24,7 @@ MonoBehaviour:
   - {fileID: 3490686041470116538, guid: 1a73cf4c955985742a8cdf3339307359, type: 3}
   winText: YOU WON
   loseText: YOU LOST
-  startHeight: 8
-  placingDuration: 0.4
-  placingDelay: 0.3
+  startHeight: 10
+  placingDuration: 0.3
+  placingDelay: 0.2
   placingEase: 3

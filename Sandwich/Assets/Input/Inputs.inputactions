@@ -47,6 +47,17 @@
                 },
                 {
                     "name": "",
+                    "id": "ec241970-06e5-4add-8e5b-f0241ab7f2f6",
+                    "path": "<Touchscreen>/primaryTouch/press",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "StartTouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "3071b55d-feaf-492a-a472-8e5a0fd3c0ca",
                     "path": "<Mouse>/position",
                     "interactions": "",
@@ -58,8 +69,30 @@
                 },
                 {
                     "name": "",
+                    "id": "b7266266-28b5-42ea-998d-80ec5653e891",
+                    "path": "<Touchscreen>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Position",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "ba3e4817-c3c2-4306-aa54-f57c60c1e5c5",
                     "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "EndTouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "18b7af0b-bb1c-4875-8b80-1e6fb8433c36",
+                    "path": "<Touchscreen>/primaryTouch/press",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

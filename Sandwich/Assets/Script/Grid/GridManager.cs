@@ -4,18 +4,31 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
+
+public struct InsertedInfo
+{
+    public Roteable inserted;
+    public (int r, int c) pos;
+
+    public InsertedInfo(Roteable _inserted, (int r, int c) _pos)
+    {
+        inserted = _inserted;
+        pos = _pos;
+    }
+}
 
 public class GridManager : MonoBehaviour
 {
     [SerializeField] GridInfo info;
     [Header("Refs")]
     [SerializeField] Slider difficultySlider;
+    [SerializeField] TMP_Text[] difficultyTxts;
     [SerializeField] GameObject endPanel;
     [SerializeField] TMP_Text endTxt;
 
     private readonly bool[,] cells = new bool[Constants.GRID_SIZE, Constants.GRID_SIZE];
-    private readonly List<(int r, int c)> insertedLst = new();
-    private readonly List<Roteable> roteableLst = new();
+    private readonly List<InsertedInfo> insertedList = new();
 
     public delegate void Placed();
     public static Placed OnPlaced;
@@ -34,14 +47,22 @@ public class GridManager : MonoBehaviour
     {
         InstantiateGrid();
 
-        insertedLst.Clear();
-
-        foreach (Roteable r in roteableLst)
+        foreach (InsertedInfo r in insertedList)
         {
-            if (r != null) Destroy(r.gameObject);
+            if (r.inserted != null) Destroy(r.inserted.gameObject);
         }
 
-        roteableLst.Clear();
+        insertedList.Clear();
+
+        ValorizeDifficultyTxts();
+    }
+
+    void ValorizeDifficultyTxts()
+    {
+        for (int i = 0; i < difficultyTxts.Length; i++)
+        {
+            difficultyTxts[i].text = ((i + 1) * info.DifficultyMultiplicator).ToString();
+        }
     }
 
     void InstantiateGrid()
@@ -68,18 +89,6 @@ public class GridManager : MonoBehaviour
 
     void CheckWin(Roteable caller, bool win)
     {
-        //StartCoroutine(CheckWinDelayed(caller, win));
-        win = win && CheckOthers(caller);
-
-        endTxt.text = win ? info.WinText : info.LoseText;
-
-        endPanel.SetActive(true);
-    }
-
-    IEnumerator CheckWinDelayed(Roteable caller, bool win)
-    {
-        yield return null;
-
         win = win && CheckOthers(caller);
 
         endTxt.text = win ? info.WinText : info.LoseText;
@@ -89,7 +98,10 @@ public class GridManager : MonoBehaviour
 
     bool CheckOthers(Roteable caller)
     {
-        return roteableLst.FindAll(roteable => !roteable.Equals(caller) && roteable.gameObject.activeSelf).Count == 0;
+        return insertedList.FindAll(
+            insertedInfo => !insertedInfo.inserted.Equals(caller)
+            && insertedInfo.inserted.gameObject.activeSelf
+            ).Count == 0;
     }
 
     void InstantiateBreads()
@@ -106,11 +118,11 @@ public class GridManager : MonoBehaviour
     void InstantiateBread((int r, int c) pos)
     {
         cells[pos.r, pos.c] = true;
-        insertedLst.Add(pos);
 
         Bread bread = Instantiate(info.BreadPrefab, new(pos.r * info.Offset, info.StartHeight, pos.c * info.Offset), Quaternion.identity, transform);
         bread.Setup(info.Offset);
-        roteableLst.Add(bread);
+
+        insertedList.Add(new(bread, pos));
     }
 
     void InstantiateIngredients(int n)
@@ -119,16 +131,15 @@ public class GridManager : MonoBehaviour
 
         for (int i = 0; i < n; i++)
         {
+            List<(int r, int c)> insertedPos = insertedList.Select(elem => elem.pos).ToList();
+
             while (adiacents == null || adiacents.Count == 0)
             {
-                (int chosenR, int chosenC) = GetRandom(insertedLst);
+                (int chosenR, int chosenC) = GetRandom(insertedPos);
                 adiacents = FindAdiacent(chosenR, chosenC);
             }
 
             (int r, int c) = GetRandom(adiacents);
-
-            cells[r, c] = true;
-            insertedLst.Add((r, c));
 
             InstantiateIngredient(r, c);
 
@@ -140,6 +151,8 @@ public class GridManager : MonoBehaviour
     {
         if (info.IngredientMeshes.Count == 0) return;
 
+        cells[r, c] = true;
+
         Roteable parent = Instantiate(info.RoteablePrefab, new(r * info.Offset, info.StartHeight, c * info.Offset), Quaternion.identity, transform);
 
         Transform randomIngredient = info.IngredientMeshes[Random.Range(0, info.IngredientMeshes.Count)];
@@ -148,7 +161,9 @@ public class GridManager : MonoBehaviour
 
         parent.Setup(info.Offset, mesh);
 
-        roteableLst.Add(parent);
+        //roteableLst.Add(parent);
+
+        insertedList.Add(new(parent, (r, c)));
     }
 
     List<(int r, int c)> FindAdiacent(int row, int col)
@@ -176,12 +191,12 @@ public class GridManager : MonoBehaviour
 
     IEnumerator PlaceElements()
     {
-        for(int i = 0; i < roteableLst.Count; i++)
+        for (int i = 0; i < insertedList.Count; i++)
         {
             Sequence seq = DOTween.Sequence();
-            seq.Append(roteableLst[i].transform.DOMoveY(0, info.PlacingDuration).SetEase(info.PlacingEase));
-            
-            if(i == roteableLst.Count - 1)
+            seq.Append(insertedList[i].inserted.transform.DOMoveY(0, info.PlacingDuration).SetEase(info.PlacingEase));
+
+            if (i == insertedList.Count - 1)
             {
                 seq.AppendCallback(() => OnPlaced?.Invoke());
             }

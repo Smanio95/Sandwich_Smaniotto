@@ -3,6 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum Axis
+{
+    All,
+    X,
+    Y,
+    Z
+}
+
 public static class Utils
 {
     public static float RoundToRectValue(float t)
@@ -17,22 +25,34 @@ public static class Utils
         return value - module;
     }
 
-    public static Vector3 Round(this Vector3 vector, int decimals)
+    public static Vector3 Round(Vector3 vector, int decimals, Axis axis = Axis.All)
     {
         return new(
-            (float)Math.Round(vector.x, decimals),
-            (float)Math.Round(vector.y, decimals),
-            (float)Math.Round(vector.z, decimals)
-            );
+                (float)Math.Round(vector.x, (axis == Axis.X || axis == Axis.All) ? decimals : 0),
+                (float)Math.Round(vector.y, (axis == Axis.Y || axis == Axis.All) ? decimals : 0),
+                (float)Math.Round(vector.z, (axis == Axis.Z || axis == Axis.All) ? decimals : 0)
+                );
     }
 
-    public static Quaternion RoundToRectValue(this Quaternion quaternion)
+    public static Quaternion RoundToRectValue(Quaternion quaternion)
     {
         Vector3 eulers = quaternion.eulerAngles;
         return Quaternion.Euler(
-            Utils.RoundToRectValue(eulers.x),
-            Utils.RoundToRectValue(eulers.y),
-            Utils.RoundToRectValue(eulers.z));
+            RoundToRectValue(eulers.x),
+            RoundToRectValue(eulers.y),
+            RoundToRectValue(eulers.z));
+    }
+
+    public static List<T> CopyLst<T>(List<T> lst)
+    {
+        List<T> newLst = new();
+
+        foreach(T obj in lst)
+        {
+            newLst.Add(obj);
+        }
+
+        return newLst;
     }
 }
 

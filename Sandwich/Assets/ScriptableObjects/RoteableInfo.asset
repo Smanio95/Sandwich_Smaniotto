@@ -17,6 +17,6 @@ MonoBehaviour:
     m_Bits: 64
   minSqrDistance: 700
   rotationSpeed: 500
-  repositionateAngle: 20
+  repositionateAngle: 15
   breadWinCounter: 2
   singleMeshHeight: 0.2

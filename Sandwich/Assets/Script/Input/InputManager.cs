@@ -67,7 +67,6 @@ public class InputManager : MonoBehaviour
         currentRoteable = hit;
 
         invoker.UpdateRef(currentRoteable);
-
     }
 
     void BtnEnabling(bool start)

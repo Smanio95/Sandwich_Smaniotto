@@ -2,8 +2,8 @@ using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 public enum IngredientType
 {
@@ -58,6 +58,8 @@ public class Roteable : MonoBehaviour
     private readonly List<Vector3> axisPoints = new();
 
     private Vector3 initialPos;
+    private Vector3 rotationPos;
+    private Quaternion initialRot;
 
     private Vector2 startPos;
     private Vector2 lastPos;
@@ -114,7 +116,10 @@ public class Roteable : MonoBehaviour
 
         startPos = _startPos;
         lastPos = startPos;
+
         initialPos = transform.position;
+        initialRot = transform.rotation;
+        rotationPos = initialPos;
 
         rotatedAngle = 0;
 
@@ -174,7 +179,7 @@ public class Roteable : MonoBehaviour
         // at height 0 and subtract half of a single mesh for both myself and the object to inglobe in 
         // order to consider the position of the pivot of the single meshes (positioned in the middle of a single mesh that is built to have 0.2f of height).
         // We then substract by 2 to retrieve the center of rotation.
-        if (nextChild) initialPos.y = (Height + nextChild.Height - info.SingleMeshHeight) / 2;
+        if (nextChild) rotationPos.y = (Height + nextChild.Height - info.SingleMeshHeight) / 2;
 
         lastPos = posValue;
     }
@@ -189,7 +194,7 @@ public class Roteable : MonoBehaviour
         {
             askCompletion = false;
 
-            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.fixedDeltaTime);
+            transform.RotateAround(rotationPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.fixedDeltaTime);
 
             lastPos = posValue;
 
@@ -216,16 +221,23 @@ public class Roteable : MonoBehaviour
 
             yield return null;
 
-            transform.RotateAround(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.deltaTime);
+            transform.RotateAround(rotationPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up), delta * info.RotationSpeed * Time.deltaTime);
 
             rotatedAngle -= delta * info.RotationSpeed * Time.deltaTime;
 
-            Debug.DrawRay(initialPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up) * 100, Color.red, 10);
+            //Debug.DrawRay(rotationPos + rotationAxis, Vector3.Cross(rotationAxis, Vector3.up) * 100, Color.red, 10);
         }
 
-        transform.SetPositionAndRotation(
-            transform.position.Round(1),
-            transform.rotation.RoundToRectValue());
+        if (toMin)
+        {
+            transform.SetPositionAndRotation(
+                initialPos,
+                initialRot);
+        }
+        else
+        {
+            transform.rotation = Utils.RoundToRectValue(transform.rotation);
+        }
 
         repositionating = false;
         OnRepositionate?.Invoke(repositionating);
@@ -271,7 +283,7 @@ public class Roteable : MonoBehaviour
 
         Vector3 origin = new(initialPos.x, modifiedHeight, initialPos.z);
 
-        Debug.DrawLine(origin, origin + direction * 5, Color.magenta, 5);
+        //Debug.DrawLine(origin, origin + direction * 5, Color.magenta, 5);
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, sideDistance * 2, info.DetectionMask))
         {
@@ -357,7 +369,7 @@ public class Roteable : MonoBehaviour
     {
         rotatedAngle = 0;
 
-        initialPos = new(transform.position.x,
+        rotationPos = new(transform.position.x,
                         (Height - info.SingleMeshHeight / 2) / 2,
                         transform.position.z);
 
@@ -404,24 +416,29 @@ public class Roteable : MonoBehaviour
 
     void ResetPositions()
     {
-        transform.position = new(
+        transform.position = Utils.Round(
+            new(
             transform.position.x,
             Height - info.SingleMeshHeight,
-            transform.position.z);
+            transform.position.z),
+            1,
+            Axis.Y);
 
         UpdatePositions();
     }
 
     void UpdatePositions()
     {
-        List<MeshInfo> copyLst = children.OrderBy(a => a.mesh.position.y).ToList();
+        List<MeshInfo> sortedLst = children.OrderBy(a => a.mesh.position.y).ToList();
 
-        for (int i = 0; i < copyLst.Count; i++)
+        for (int i = 0; i < sortedLst.Count; i++)
         {
-            copyLst[i].mesh.position = new(
-                copyLst[i].mesh.position.x,
+            sortedLst[i].mesh.position = Utils.Round(new(
+                sortedLst[i].mesh.position.x,
                 info.SingleMeshHeight * i,
-                copyLst[i].mesh.position.z);
+                sortedLst[i].mesh.position.z),
+                1,
+                Axis.Y);
         }
     }
 }
